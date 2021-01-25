@@ -5,6 +5,8 @@ use druid::{
 use druid::{AppLauncher, Color, Data, LocalizedString, WindowDesc};
 use std::time;
 
+static TIMER_INTERVAL: time::Duration = time::Duration::from_millis(200);
+
 /// Holds data for TimerWidget.
 // `last_started` is the `SystemTime` when the timer was last started/unpaused.
 // `last_remaining` is the `Duration` remaining on the timer when the timer was last started/unpaused.
@@ -60,14 +62,10 @@ impl TimerWidget {
     fn new() -> Self {
         TimerWidget {
             timer_id: TimerToken::INVALID,
-            // TODO start with time remaining
+            // Closure updates label when t_data changes
             label: Label::dynamic(|t_data: &TimerData, _| t_data.to_string())
                 .with_text_color(Color::WHITE),
         }
-    }
-
-    fn timer_interval() -> time::Duration {
-        time::Duration::from_millis(200)
     }
 }
 
@@ -76,13 +74,14 @@ impl Widget<TimerData> for TimerWidget {
         match event {
             Event::WindowConnected => {
                 // Start the timer when the application launches
-                self.timer_id = ctx.request_timer(TimerWidget::timer_interval());
+                self.timer_id = ctx.request_timer(TIMER_INTERVAL);
             }
             Event::Timer(id) => {
+                // If this is the event for the current timer, set up a new timer
                 if *id == self.timer_id {
-                    self.timer_id = ctx.request_timer(TimerWidget::timer_interval());
+                    self.timer_id = ctx.request_timer(TIMER_INTERVAL);
                 }
-                println!("TIMER EVENT HIT");
+                println!("TIMER EVENT");
                 println!(
                     "{} | {}",
                     data.last_remaining.as_secs(),
@@ -196,7 +195,8 @@ impl Widget<TimerData> for RootWidget {
 
 pub fn main() {
     // Create WindowDesc with T as RootWidget's type (T must implement Data)
-    let window = WindowDesc::new(|| RootWidget::new()).title(LocalizedString::new("My App"));
+    let window = WindowDesc::new(|| RootWidget::new()).title(LocalizedString::new("Druid Timer"));
+
     // Create AppLauncher using window. AppLauncher type T is same as window's type, which is RootWidget's type
     AppLauncher::with_window(window)
         .use_simple_logger()
