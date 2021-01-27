@@ -81,7 +81,7 @@ fn build_ui() -> impl Widget<TimerData> {
         .background(Color::BLACK)
         .fix_size(50., 50.);
 
-    let start_button = StartButton::new()
+    let _start_button = StartButton::new()
         .background(Color::BLACK)
         // TODO fix size
         .fix_size(50., 50.);
@@ -102,8 +102,11 @@ fn build_ui() -> impl Widget<TimerData> {
 
 pub fn main() {
     let window = WindowDesc::new(build_ui).title(LocalizedString::new("Druid Timer"));
-    let initial_state =
-        TimerData::new(time::SystemTime::now(), time::Duration::from_secs(60), false);
+    let initial_state = TimerData::new(
+        time::SystemTime::now(),
+        time::Duration::from_secs(60),
+        false,
+    );
 
     AppLauncher::with_window(window)
         .use_simple_logger()

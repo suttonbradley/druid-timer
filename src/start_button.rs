@@ -13,28 +13,35 @@ impl StartButton {
 }
 
 impl Widget<TimerData> for StartButton {
-    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut TimerData, env: &Env) {}
+    fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut TimerData, _env: &Env) {}
 
     fn lifecycle(
         &mut self,
-        ctx: &mut LifeCycleCtx,
-        event: &LifeCycle,
-        data: &TimerData,
-        env: &Env,
+        _ctx: &mut LifeCycleCtx,
+        _event: &LifeCycle,
+        _data: &TimerData,
+        _env: &Env,
     ) {
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &TimerData, data: &TimerData, env: &Env) {}
+    fn update(
+        &mut self,
+        _ctx: &mut UpdateCtx,
+        _old_data: &TimerData,
+        _data: &TimerData,
+        _env: &Env,
+    ) {
+    }
 
     fn layout(
         &mut self,
-        ctx: &mut LayoutCtx,
+        _ctx: &mut LayoutCtx,
         bc: &BoxConstraints,
-        data: &TimerData,
-        env: &Env,
+        _data: &TimerData,
+        _env: &Env,
     ) -> Size {
         bc.constrain(Size::new(50., 50.))
     }
 
-    fn paint(&mut self, ctx: &mut PaintCtx, data: &TimerData, env: &Env) {}
+    fn paint(&mut self, _ctx: &mut PaintCtx, _data: &TimerData, _env: &Env) {}
 }

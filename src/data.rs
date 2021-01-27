@@ -53,6 +53,7 @@ impl TimerData {
         }
     }
 
+    #[allow(dead_code)]
     pub fn pause(&mut self) {
         if self.running {
             self.last_remaining -= time::SystemTime::now()
