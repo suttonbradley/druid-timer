@@ -1,11 +1,9 @@
 mod data;
 mod start_button;
 
-use crate::data::TimerData;
-use crate::start_button::StartButton;
-use druid::{
-    widget::{prelude::*, Button, CrossAxisAlignment, Flex, Label, MainAxisAlignment, WidgetExt},
-    TimerToken,
+use crate::data::{TimerData, TimerState};
+use druid::widget::{
+    prelude::*, Button, CrossAxisAlignment, Flex, Label, MainAxisAlignment, WidgetExt,
 };
 use druid::{AppLauncher, Color, LocalizedString, WindowDesc};
 use std::time;
@@ -13,14 +11,12 @@ use std::time;
 static TIMER_INTERVAL: time::Duration = time::Duration::from_millis(200);
 
 struct TimerWidget {
-    timer_id: TimerToken,
     label: Label<TimerData>,
 }
 
 impl TimerWidget {
     fn new() -> Self {
         TimerWidget {
-            timer_id: TimerToken::INVALID,
             label: Label::new(|t_data: &TimerData, _: &Env| t_data.to_string())
                 .with_text_color(Color::WHITE),
         }
@@ -31,14 +27,27 @@ impl Widget<TimerData> for TimerWidget {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut TimerData, env: &Env) {
         match event {
             Event::WindowConnected => {
-                self.timer_id = ctx.request_timer(TIMER_INTERVAL);
+                data.timer_id = ctx.request_timer(TIMER_INTERVAL);
             }
             Event::Timer(id) => {
-                if *id == self.timer_id && !data.timed_out() {
-                    self.timer_id = ctx.request_timer(TIMER_INTERVAL);
+                if *id == data.timer_id {
+                    // check for timer expiration
+                    data.check_timed_out();
+
+                    match data.get_state() {
+                        // request new timer if running
+                        TimerState::Running => {
+                            data.timer_id = ctx.request_timer(TIMER_INTERVAL);
+                        }
+                        // else depend on button click to request new timer (for efficiency)
+                        _ => {
+                            data.timer_id = ctx.request_timer(TIMER_INTERVAL);
+                        }
+                    }
+
+                    ctx.request_update();
+                    println!("TIMER EVENT {}", data.to_string());
                 }
-                ctx.request_update();
-                println!("TIMER EVENT {}", data.to_string());
             }
             _ => {}
         }
@@ -57,6 +66,7 @@ impl Widget<TimerData> for TimerWidget {
     }
 
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &TimerData, data: &TimerData, env: &Env) {
+        // println!("UPDATE<TimerWidget>\nold_data: \"{:#?}\"\ndata: \"{:#?}\"\n", old_data, data);
         self.label.update(ctx, old_data, data, env);
     }
 
@@ -81,14 +91,21 @@ fn build_ui() -> impl Widget<TimerData> {
         .background(Color::BLACK)
         .fix_size(50., 50.);
 
-    let _start_button = StartButton::new()
-        .background(Color::BLACK)
-        // TODO fix size
-        .fix_size(50., 50.);
-
-    let start_button = Button::new("Start").on_click(|_, t_data: &mut TimerData, _| {
-        t_data.resume();
-    });
+    let start_button =
+        Button::new("Start").on_click(|_ctx: &mut EventCtx, t_data: &mut TimerData, _| match t_data
+            .get_state()
+        {
+            TimerState::Running => {
+                t_data.pause();
+                println!("BUTTON: Running -> Paused");
+            }
+            TimerState::Paused => {
+                t_data.resume();
+                // t_data.timer_id = ctx.request_timer(TIMER_INTERVAL);
+                println!("BUTTON: Paused -> Running");
+            }
+            _ => {}
+        });
 
     Flex::column()
         .with_flex_spacer(100.0)
@@ -105,7 +122,7 @@ pub fn main() {
     let initial_state = TimerData::new(
         time::SystemTime::now(),
         time::Duration::from_secs(60),
-        false,
+        TimerState::Paused,
     );
 
     AppLauncher::with_window(window)

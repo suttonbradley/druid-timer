@@ -1,5 +1,12 @@
-use druid::Data;
+use druid::{Data, TimerToken};
 use std::time;
+
+#[derive(Clone, Copy, Data, PartialEq)]
+pub enum TimerState {
+    Running,
+    Paused,
+    Expired,
+}
 
 /// Holds data for TimerWidget.
 // `last_started` is the `SystemTime` when the timer was last started/unpaused.
@@ -9,24 +16,29 @@ use std::time;
 pub struct TimerData {
     last_started: time::SystemTime,
     last_remaining: time::Duration,
-    running: bool,
+    state: TimerState,
+    // TODO make private
+    // TODO probably should not ignore?
+    #[data(ignore)]
+    pub timer_id: TimerToken,
 }
 
 impl TimerData {
     pub fn new(
         last_started: time::SystemTime,
         last_remaining: time::Duration,
-        running: bool,
+        state: TimerState,
     ) -> Self {
         TimerData {
-            last_started,
-            last_remaining,
-            running,
+            last_started: last_started,
+            last_remaining: last_remaining,
+            state: state,
+            timer_id: TimerToken::INVALID,
         }
     }
 
     pub fn to_string(&self) -> String {
-        let secs_remaining = if !self.running {
+        let secs_remaining = if self.state == TimerState::Paused {
             self.last_remaining.as_secs()
         } else {
             self.last_remaining
@@ -42,24 +54,31 @@ impl TimerData {
         format!("{:02}:{:02}", secs_remaining / 60, secs_remaining % 60)
     }
 
-    pub fn timed_out(&self) -> bool {
-        self.last_started + self.last_remaining <= time::SystemTime::now()
-    }
-
-    pub fn resume(&mut self) {
-        if !self.running {
-            self.last_started = time::SystemTime::now();
-            self.running = true;
+    pub fn check_timed_out(&mut self) {
+        if self.state != TimerState::Expired
+            && self.last_started + self.last_remaining <= time::SystemTime::now()
+        {
+            self.state = TimerState::Expired;
         }
     }
 
-    #[allow(dead_code)]
+    pub fn get_state(&self) -> TimerState {
+        self.state
+    }
+
+    pub fn resume(&mut self) {
+        if self.state == TimerState::Paused {
+            self.last_started = time::SystemTime::now();
+            self.state = TimerState::Running;
+        }
+    }
+
     pub fn pause(&mut self) {
-        if self.running {
+        if self.state == TimerState::Running {
             self.last_remaining -= time::SystemTime::now()
                 .duration_since(self.last_started)
                 .unwrap();
-            self.running = false
+            self.state = TimerState::Paused;
         }
     }
 }
